@@ -1,0 +1,3 @@
+Line Follower V2 using Atmega328p and 5 sensors 
+
+(sensor code adapted from Pololu QTR Reflectance Sensors Lib http://www.pololu.com/docs/0J19)
