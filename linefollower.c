@@ -5,7 +5,6 @@
 #include <avr/eeprom.h>
 #include <avr/sleep.h>
 #include <stdlib.h>
-#include <string.h>
 #include "USARTatmega328.h"
 
 #define DEBUG
@@ -93,14 +92,18 @@ void initPWM(){
 }
 
 void readSensors(){
-	memset(sensorValues,0,5*sizeof(uint8_t));
+	sensorValues[0]=0;
+	sensorValues[1]=0;
+	sensorValues[2]=0;
+	sensorValues[3]=0;
+	sensorValues[4]=0;
 
 	//turn on leds
 	LEDPORT |= (1<<LEDPIN);
 
 	SENSORSPORT |= ALLSENSORS;
 	SENSORSREGISTER |= ALLSENSORS;
-	_delay_us(10);
+	_delay_us(15);
 
 	SENSORSREGISTER &= ~ALLSENSORS;
 	SENSORSPORT &= ~ALLSENSORS;
@@ -115,15 +118,25 @@ void readSensors(){
 		for (int i=0; i< 5 ; i++){
 			if(sensors & (1<<i))
 				sensorValues[i]++;
-		};
+		}
 	}
 	//turn off leds
 	LEDPORT &= ~(1<<LEDPIN);
 }
 
 void resetSensors(){
-	memset(sensorValuesMin,255,5*sizeof(uint8_t));
-	memset(sensorValuesMax,0,5*sizeof(uint8_t));
+	sensorValuesMin[0]=255;
+	sensorValuesMin[1]=255;
+	sensorValuesMin[2]=255;
+	sensorValuesMin[3]=255;
+	sensorValuesMin[4]=255;
+
+	sensorValuesMax[0]=0;
+	sensorValuesMax[1]=0;
+	sensorValuesMax[2]=0;
+	sensorValuesMax[3]=0;
+	sensorValuesMax[4]=0;
+
 }
 
 void calibrateSensors(){
@@ -252,10 +265,6 @@ void setMotors(int left,int right){
 		MOTORPORT |= (1<<LEFTB);
 	}
 
-	int value = abs(left);
-	OCR0A =  (value>255)?255:value;
-
-
 	if (right>=0){
 		MOTORPORT |= (1<<RIGHTA);
 		MOTORPORT &= ~(1<<RIGHTB);
@@ -264,8 +273,10 @@ void setMotors(int left,int right){
 		MOTORPORT |= (1<<RIGHTB);
 	}
 
-	value = abs(right);
-	OCR0B =  (value>255)?255:value;
+	left = abs(left);
+	right = abs(right);
+	OCR0A =  (left>255)?255:left;
+	OCR0B =  (right>255)?255:right;
 
 }
 
@@ -274,10 +285,10 @@ void initalCalibration(){
 	// sensors.
 	for(int counter=0;counter<80;counter++)
 	{
-		if(counter < 20 || counter >= 60)
-			setMotors(40,-40);
+		if(counter < 20 || counter >= 50)
+			setMotors(60,-60);
 		else
-			setMotors(-40,40);
+			setMotors(-60,60);
 
 		calibrateSensors();
 
@@ -293,7 +304,7 @@ int main (){
 	initPWM();
 
 #ifdef DEBUG
-	USART_Init(51);
+	USART_Init(25);
 #endif
 
 	resetSensors();
@@ -302,6 +313,27 @@ int main (){
 	_delay_ms(500);
 
 	initalCalibration();
+
+
+	/*print_string("calibration:\n");
+	print_string("max:");
+	for (int i= 0; i< 5; i++){
+		char temp[10];
+		itoa(sensorValuesMax[i],temp,10);
+		print_string(temp);
+		print_string(",");
+	}
+	print_string("\n");
+
+	print_string("min:");
+	for (int i= 0; i< 5; i++){
+		char temp[10];
+		itoa(sensorValuesMin[i],temp,10);
+		print_string(temp);
+		print_string(",");
+	}
+	print_string("\n");*/
+
 
 	while(BUTTONSTATE & (1<<BUTTON1));
 	_delay_ms(500);
@@ -325,6 +357,27 @@ int main (){
 		{
 			setMotors(100,0);
 		}
+
+
+		/*readSensors();
+		unsigned int position = readLine(0);
+		/*print_string("values:");
+		for (int i= 0; i< 5; i++){
+			char temp[10];
+			itoa(sensorValues[i],temp,10);
+			print_string(temp);
+			print_string(",");
+		}
+		print_string("\n");
+
+		print_string("pos:");
+
+		char temp[10];
+		itoa(position,temp,10);
+		print_string(temp);
+		print_string("\n");
+
+		_delay_ms(50);*/
 
 
 	}
