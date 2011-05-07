@@ -6,6 +6,7 @@
 #include <avr/sleep.h>
 #include <stdlib.h>
 #include "USARTatmega328.h"
+#include "lcd-74hc595.h"
 
 #define DEBUG
 
@@ -53,16 +54,12 @@ uint8_t sensorValuesMax[5]={0,0,0,0,0};
 
 
 
-void initIO(){
+void IO_init(){
 	//set motor pins to output
 	MOTORREGISTER |=  (1<<LEFTA) | (1<<LEFTB) | (1<<RIGHTA) | (1<<RIGHTB);
 
 	//set led pin to output
 	LEDREGISTER |= (1<<LEDPIN);
-
-	//set lcd pins to output
-	LCDENABLEREGISTER |= (1<<LCDENABLE);
-	LCDDATAREGISTER |= (1<<LCDDATA)|(1<<LCDCLOCK);
 
 	//set button pins to input
 	BUTTONREGISTER &= ~(1<<BUTTON1);
@@ -71,7 +68,7 @@ void initIO(){
 }
 
 
-void initPWM(){
+void PWM_init(){
 
 	//set to output
 	DDRD |= (1<<PD5) | (1<<PD6);
@@ -91,7 +88,7 @@ void initPWM(){
 
 }
 
-void readSensors(){
+void Sensors_read(){
 	sensorValues[0]=0;
 	sensorValues[1]=0;
 	sensorValues[2]=0;
@@ -124,7 +121,7 @@ void readSensors(){
 	LEDPORT &= ~(1<<LEDPIN);
 }
 
-void resetSensors(){
+void Sensors_reset(){
 	sensorValuesMin[0]=255;
 	sensorValuesMin[1]=255;
 	sensorValuesMin[2]=255;
@@ -139,9 +136,9 @@ void resetSensors(){
 
 }
 
-void calibrateSensors(){
+void Sensors_calibrate(){
 	for (int i =0 ; i < 10 ; i++){
-		readSensors();
+		Sensors_read();
 
 		for (int j=0; j < 5; j++){
 			if(sensorValuesMax[j]<sensorValues[j])
@@ -158,12 +155,12 @@ void calibrateSensors(){
 // corresponds to the maximum value.  Calibration values are
 // stored separately for each sensor, so that differences in the
 // sensors are accounted for automatically.
-void readCalibrated()
+void Sensors_readCalibrated()
 {
 	int i;
 
 	// read the needed values
-	readSensors();
+	Sensors_read();
 
 	for(i=0;i<5;i++)
 	{
@@ -208,7 +205,7 @@ void readCalibrated()
 // black, set the optional second argument white_line to true.  In
 // this case, each sensor value will be replaced by (1000-value)
 // before the averaging.
-int readLine(char white_line)
+int Sensors_readLine(char white_line)
 {
 	unsigned char i, on_line = 0;
 	unsigned long avg; // this is for the weighted total, which is long
@@ -216,7 +213,7 @@ int readLine(char white_line)
 	unsigned int sum; // this is for the denominator which is <= 64000
 	static int last_value=0; // assume initially that the line is left.
 
-	readCalibrated();
+	Sensors_readCalibrated();
 
 	avg = 0;
 	sum = 0;
@@ -256,7 +253,7 @@ int readLine(char white_line)
 }
 
 
-void setMotors(int left,int right){
+void Motors_set(int left,int right){
 	if (left>=0){
 		MOTORPORT |= (1<<LEFTA);
 		MOTORPORT &= ~(1<<LEFTB);
@@ -286,28 +283,29 @@ void initalCalibration(){
 	for(int counter=0;counter<80;counter++)
 	{
 		if(counter < 20 || counter >= 50)
-			setMotors(60,-60);
+			Motors_set(60,-60);
 		else
-			setMotors(-60,60);
+			Motors_set(-60,60);
 
-		calibrateSensors();
+		Sensors_calibrate();
 
 		_delay_ms(20);
 	}
-	setMotors(0,0);
+	Motors_set(0,0);
 }
 
 
 int main (){
 
-	initIO();
-	initPWM();
+	IO_init();
+	PWM_init();
+	LCD_init();
 
 #ifdef DEBUG
 	USART_Init(25);
 #endif
 
-	resetSensors();
+	Sensors_reset();
 
 	while(BUTTONSTATE & (1<<BUTTON1));
 	_delay_ms(500);
@@ -343,25 +341,25 @@ int main (){
 		// Get the position of the line.  Note that we *must* provide
 		// the "sensors" argument to read_line() here, even though we
 		// are not interested in the individual sensor readings.
-		unsigned int position = readLine(0);
+		unsigned int position = Sensors_readLine(0);
 
 		if(position < 1000)
 		{
-			setMotors(0,100);
+			Motors_set(0,100);
 		}
 		else if(position < 3000)
 		{
-			setMotors(100,100);
+			Motors_set(100,100);
 		}
 		else
 		{
-			setMotors(100,0);
+			Motors_set(100,0);
 		}
 
 
 		/*readSensors();
 		unsigned int position = readLine(0);
-		/*print_string("values:");
+		print_string("values:");
 		for (int i= 0; i< 5; i++){
 			char temp[10];
 			itoa(sensorValues[i],temp,10);
