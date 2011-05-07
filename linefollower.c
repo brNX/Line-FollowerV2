@@ -336,6 +336,9 @@ int main (){
 	while(BUTTONSTATE & (1<<BUTTON1));
 	_delay_ms(500);
 
+	/*char Message1[] = "3-Wire LCD";
+	char Message2[] = "using 74HC595";*/
+
 	for (;;){
 
 		// Get the position of the line.  Note that we *must* provide
@@ -376,6 +379,15 @@ int main (){
 		print_string("\n");
 
 		_delay_ms(50);*/
+		/*LCD_moveCursor(1,4);
+		LCD_writeText(Message1);
+		LCD_moveCursor(2,2);
+		LCD_writeText(Message2);
+		_delay_ms(1500);
+		LCD_writeByte(0x01,0);  // Clear LCD
+		_delay_ms(1000);*/
+
+
 
 
 	}

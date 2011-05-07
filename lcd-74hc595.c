@@ -10,25 +10,36 @@
 #include "lcd-74hc595.h"
 
 void LCD_init(){
-	//set lcd pins to output
 	LCDENABLEREGISTER |= (1<<LCDENABLE);
-	LCDDATAREGISTER |= (1<<LCDDATA)|(1<<LCDCLOCK);
+	LCDDATAREGISTER |= ((1<<LCDDATA)|(1<<LCDCLOCK));
+
+	LCDENABLEPORT &= ~(1<<LCDENABLE);
+	LCDDATAPORT &= ~((1<<LCDDATA)|(1<<LCDCLOCK));
 
 	_delay_ms(50);
-	LCD_writeByte(0x20,0); // Wake-Up Sequence
-	_delay_ms(50);
-	LCD_writeByte(0x20,0);
-	_delay_ms(50);
-	LCD_writeByte(0x20,0);
-	_delay_ms(50);
-	LCD_writeByte(0x28,0); // 4-bits, 2 lines, 5x7 font
-	_delay_ms(50);
-	LCD_writeByte(0x0C,0); // Display ON, No cursors
-	_delay_ms(50);
-	LCD_writeByte(0x06,0); // Entry mode- Auto-increment, No Display shifting
-	_delay_ms(50);
+
+	LCD_writeNibble(0x3,0);
+	_delay_us(4500);
+
+	LCD_writeNibble(0x3,0);
+	_delay_us(4500);
+
+	LCD_writeNibble(0x3,0);
+	_delay_us(150);
+
+	LCD_writeNibble(0x2,0);
+
+
+	LCD_writeByte(0x28,0);
+	_delay_us(4500);
+
+	LCD_writeByte(0xC,0);
+
+	//clear
 	LCD_writeByte(0x01,0);
-	_delay_ms(50);
+	_delay_us(2000);
+
+	LCD_writeByte(0x06,0);
 }
 
 
@@ -60,7 +71,9 @@ void LCD_writeNibble(uint8_t nibble,uint8_t RS){
 	LCDDATAPORT &= ~(1<<LCDCLOCK); 		//clock = 0
 	LCDDATAPORT &= ~(1<<LCDDATA); 		//data = 0
 	LCDENABLEPORT |= (1<<LCDENABLE); 	//enable = 1
+	_delay_us(450);
 	LCDENABLEPORT &= ~(1<<LCDENABLE); 	//enable = 0
+	_delay_us(40);
 }
 
 void LCD_writeText(char * text){
