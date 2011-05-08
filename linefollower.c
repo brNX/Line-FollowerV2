@@ -106,6 +106,9 @@ const char ready[] PROGMEM = "Ready...";
 const char push[] PROGMEM = "Push B1";
 const char start[] PROGMEM = "Start in";
 const char gogo[] PROGMEM = "Go Go Go !!!";
+const char sensorsgraph[] PROGMEM ="1 2 3 4 5  Pos";
+const char mintext[] PROGMEM ="MIN";
+const char maxtext[] PROGMEM ="MAX";
 
 const char Message1[] PROGMEM = "3-Wire LCD";
 const char Message2[] PROGMEM = "using 74HC595";
@@ -351,22 +354,14 @@ void displayLCDMaxValues(){
 	LCD_clear();
 
 	LCD_moveCursor(1,1);
-	LCD_writeText("MAX");
-	LCD_moveCursor(1,5);
-	itoa(sensorValuesMax[0],temp,10);
-	LCD_writeText(temp);
-	LCD_moveCursor(1,9);
-	itoa(sensorValuesMax[1],temp,10);
-	LCD_writeText(temp);
-	LCD_moveCursor(1,13);
-	itoa(sensorValuesMax[2],temp,10);
-	LCD_writeText(temp);
-	LCD_moveCursor(2,5);
-	itoa(sensorValuesMax[3],temp,10);
-	LCD_writeText(temp);
-	LCD_moveCursor(2,9);
-	itoa(sensorValuesMax[4],temp,10);
-	LCD_writeText(temp);
+	LCD_writeTextp(maxtext);
+
+	for (int i=0;i<5;i++){
+		div_t res = div(5+i*4,14);
+		LCD_moveCursor(1+res.quot,res.rem);
+		itoa(sensorValuesMax[i],temp,10);
+		LCD_writeText(temp);
+	}
 }
 
 void displayLCDMinValues(){
@@ -374,22 +369,15 @@ void displayLCDMinValues(){
 	LCD_clear();
 
 	LCD_moveCursor(1,1);
-	LCD_writeText("MIN");
-	LCD_moveCursor(1,5);
-	itoa(sensorValuesMin[0],temp,10);
-	LCD_writeText(temp);
-	LCD_moveCursor(1,9);
-	itoa(sensorValuesMin[1],temp,10);
-	LCD_writeText(temp);
-	LCD_moveCursor(1,13);
-	itoa(sensorValuesMin[2],temp,10);
-	LCD_writeText(temp);
-	LCD_moveCursor(2,5);
-	itoa(sensorValuesMin[3],temp,10);
-	LCD_writeText(temp);
-	LCD_moveCursor(2,9);
-	itoa(sensorValuesMin[4],temp,10);
-	LCD_writeText(temp);
+	LCD_writeTextp(mintext);
+
+	for (int i=0;i<5;i++){
+		div_t res = div(5+i*4,14);
+		LCD_moveCursor(1+res.quot,res.rem);
+		itoa(sensorValuesMin[i],temp,10);
+		LCD_writeText(temp);
+	}
+
 }
 
 void startLCD(){
@@ -402,7 +390,7 @@ void startLCD(){
 
 void displayLCDcurrentValues(int pos){
 	LCD_moveCursor(1,1);
-	LCD_writeText("1 2 3 4 5  Pos");
+	LCD_writeTextp(sensorsgraph);
 	for (int i = 0; i < 5 ; i++){
 		LCD_moveCursor(2,1+i*2);
 		if(sensorValues[i] < 143)
