@@ -28,6 +28,7 @@ void LCD_writeTextp(char * text);
 void LCD_moveCursor(uint8_t x, uint8_t y);
 void LCD_defineSymbol(uint8_t location,const uint8_t * symbol);
 void LCD_defineSymbolp(uint8_t location,const uint8_t * symbol);
+void LCD_clear();
 
 
 

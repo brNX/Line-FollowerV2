@@ -113,3 +113,8 @@ void LCD_defineSymbolp(uint8_t location,const uint8_t * symbol)
 		LCD_writeByte(pgm_read_byte(symbol+i),1);
 	}
 }
+
+void LCD_clear(){
+	LCD_writeByte(0x01,0);  // Clear LCD
+	_delay_ms(10);
+}

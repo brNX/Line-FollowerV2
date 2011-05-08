@@ -35,6 +35,7 @@
 #include <avr/sleep.h>
 #include <avr/pgmspace.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "USARTatmega328.h"
 #include "lcd-74hc595.h"
 
@@ -83,23 +84,28 @@ uint8_t sensorValuesMax[5]={0,0,0,0,0};
 #define LCDCLOCK 5
 
 const uint8_t symbols[] PROGMEM ={
-	0b00000,
-	0b00000,
-	0b00000,
-	0b00000,
-	0b00000,
-	0b00000,
-	0b00000,
-	0b00000,
-	0b11111,
-	0b11111,
-	0b11111,
-	0b11111,
-	0b11111,
-	0b11111,
-	0b11111,
-	0b11111
+		0b00000,
+		0b00000,
+		0b00000,
+		0b00000,
+		0b00000,
+		0b00000,
+		0b00000,
+		0b00000,
+		0b11111,
+		0b11111,
+		0b11111,
+		0b11111,
+		0b11111,
+		0b11111,
+		0b11111,
+		0b11111
 };
+
+const char ready[] PROGMEM = "Ready...";
+const char push[] PROGMEM = "Push B1";
+const char start[] PROGMEM = "Start in";
+const char gogo[] PROGMEM = "Go Go Go !!!";
 
 const char Message1[] PROGMEM = "3-Wire LCD";
 const char Message2[] PROGMEM = "using 74HC595";
@@ -340,6 +346,89 @@ void loadLCDSymbols(){
 	}
 }
 
+void displayLCDMaxValues(){
+	char temp[4];
+	LCD_clear();
+
+	LCD_moveCursor(1,1);
+	LCD_writeText("MAX");
+	LCD_moveCursor(1,5);
+	itoa(sensorValuesMax[0],temp,10);
+	LCD_writeText(temp);
+	LCD_moveCursor(1,9);
+	itoa(sensorValuesMax[1],temp,10);
+	LCD_writeText(temp);
+	LCD_moveCursor(1,13);
+	itoa(sensorValuesMax[2],temp,10);
+	LCD_writeText(temp);
+	LCD_moveCursor(2,5);
+	itoa(sensorValuesMax[3],temp,10);
+	LCD_writeText(temp);
+	LCD_moveCursor(2,9);
+	itoa(sensorValuesMax[4],temp,10);
+	LCD_writeText(temp);
+}
+
+void displayLCDMinValues(){
+	char temp[4];
+	LCD_clear();
+
+	LCD_moveCursor(1,1);
+	LCD_writeText("MIN");
+	LCD_moveCursor(1,5);
+	itoa(sensorValuesMin[0],temp,10);
+	LCD_writeText(temp);
+	LCD_moveCursor(1,9);
+	itoa(sensorValuesMin[1],temp,10);
+	LCD_writeText(temp);
+	LCD_moveCursor(1,13);
+	itoa(sensorValuesMin[2],temp,10);
+	LCD_writeText(temp);
+	LCD_moveCursor(2,5);
+	itoa(sensorValuesMin[3],temp,10);
+	LCD_writeText(temp);
+	LCD_moveCursor(2,9);
+	itoa(sensorValuesMin[4],temp,10);
+	LCD_writeText(temp);
+}
+
+void startLCD(){
+	LCD_clear();
+	LCD_moveCursor(1,4);
+	LCD_writeTextp(ready);
+	LCD_moveCursor(2,4);
+	LCD_writeTextp(push);
+}
+
+void displayLCDcurrentValues(int pos){
+	LCD_moveCursor(1,1);
+	LCD_writeText("1 2 3 4 5  Pos");
+	for (int i = 0; i < 5 ; i++){
+		LCD_moveCursor(2,1+i*2);
+		if(sensorValues[i] < 143)
+			LCD_writeByte(1,1);
+		else if (sensorValues[i] < 285)
+			LCD_writeByte(2,1);
+		else if (sensorValues[i] < 428)
+			LCD_writeByte(3,1);
+		else if (sensorValues[i] < 571)
+			LCD_writeByte(4,1);
+		else if (sensorValues[i] < 714)
+			LCD_writeByte(5,1);
+		else if (sensorValues[i] < 857)
+			LCD_writeByte(6,1);
+		else
+			LCD_writeByte(7,1);
+	}
+
+	LCD_moveCursor(2,12);
+	char temp[5];
+	//TODO: replace sprintf
+	sprintf(temp,"%04d",pos);
+	LCD_writeText(temp);
+
+}
+
 
 int main (){
 
@@ -354,37 +443,53 @@ int main (){
 
 	Sensors_reset();
 
-	/*while(BUTTONSTATE & (1<<BUTTON1));
+
+	startLCD();
+	while(BUTTONSTATE & (1<<BUTTON1));
 	_delay_ms(500);
 
-	initalCalibration();*/
+	initalCalibration();
 
-	/*print_string("calibration:\n");
-	print_string("max:");
-	for (int i= 0; i< 5; i++){
-		char temp[10];
-		itoa(sensorValuesMax[i],temp,10);
-		print_string(temp);
-		print_string(",");
-	}
-	print_string("\n");
-
-	print_string("min:");
-	for (int i= 0; i< 5; i++){
-		char temp[10];
-		itoa(sensorValuesMin[i],temp,10);
-		print_string(temp);
-		print_string(",");
-	}
-	print_string("\n");*/
-
+	displayLCDMaxValues();
 
 	while(BUTTONSTATE & (1<<BUTTON1));
 	_delay_ms(500);
 
+	displayLCDMinValues();
+
+	while(BUTTONSTATE & (1<<BUTTON1));
+	_delay_ms(500);
+
+	LCD_clear();
+
+	while(BUTTONSTATE & (1<<BUTTON1)){
+		int pos= Sensors_readLine(0);
+		displayLCDcurrentValues(pos);
+		_delay_ms(100);
+	}
+
+	LCD_clear();
+	LCD_moveCursor(1,4);
+	LCD_writeTextp(start);
+	LCD_moveCursor(2,7);
+	LCD_writeText(" s");
+	LCD_moveCursor(2,6);
+	LCD_writeText("3");
+	_delay_ms(1000);
+	LCD_moveCursor(2,6);
+	LCD_writeText("2");
+	_delay_ms(1000);
+	LCD_moveCursor(2,6);
+	LCD_writeText("1");
+	_delay_ms(1000);
+	LCD_clear();
+	LCD_moveCursor(1,2);
+	LCD_writeTextp(gogo);
+
+
 	for (;;){
 
-		/*unsigned int position = Sensors_readLine(0);
+		unsigned int position = Sensors_readLine(0);
 
 		if(position < 1000)
 		{
@@ -397,29 +502,9 @@ int main (){
 		else
 		{
 			Motors_set(100,0);
-		}*/
-
-
-		/*readSensors();
-		unsigned int position = readLine(0);
-		print_string("values:");
-		for (int i= 0; i< 5; i++){
-			char temp[10];
-			itoa(sensorValues[i],temp,10);
-			print_string(temp);
-			print_string(",");
 		}
-		print_string("\n");
 
-		print_string("pos:");
-
-		char temp[10];
-		itoa(position,temp,10);
-		print_string(temp);
-		print_string("\n");
-
-		_delay_ms(50);*/
-		for (int i=0;i<8;i++){
+		/*for (int i=0;i<8;i++){
 			LCD_moveCursor(1,4);
 			LCD_writeByte(i,1);
 			_delay_ms(100);
@@ -428,11 +513,7 @@ int main (){
 		LCD_moveCursor(2,2);
 		LCD_writeTextp(Message2);
 		_delay_ms(1500);
-		LCD_writeByte(0x01,0);  // Clear LCD
-		_delay_ms(1000);
-
-
-
+		LCD_clear();*/
 
 	}
 
