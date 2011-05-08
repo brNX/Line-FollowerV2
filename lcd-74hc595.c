@@ -71,7 +71,7 @@ void LCD_writeNibble(uint8_t nibble,uint8_t RS){
 	LCDDATAPORT &= ~(1<<LCDCLOCK); 		//clock = 0
 	LCDDATAPORT &= ~(1<<LCDDATA); 		//data = 0
 	LCDENABLEPORT |= (1<<LCDENABLE); 	//enable = 1
-	_delay_us(450);
+	_delay_us(1);
 	LCDENABLEPORT &= ~(1<<LCDENABLE); 	//enable = 0
 	_delay_us(40);
 }
