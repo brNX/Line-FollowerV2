@@ -6,6 +6,7 @@
  */
 
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 #include <util/delay.h>
 #include "lcd-74hc595.h"
 
@@ -81,8 +82,34 @@ void LCD_writeText(char * text){
 		LCD_writeByte(*text++,1);
 }
 
+//program space
+void LCD_writeTextp(char * text){
+	char c;
+	while ((c=pgm_read_byte(text++))!= '\0'){
+		LCD_writeByte(c,1);
+	}
+}
+
 void LCD_moveCursor(uint8_t x, uint8_t y){
 	uint8_t temp = 127 + y;
 	if (x == 2) temp += 64;
 	LCD_writeByte(temp,0);
+}
+
+void LCD_defineSymbol(uint8_t location,const uint8_t * symbol)
+{
+	location &= 0x7;
+	LCD_writeByte(0x40 | (location<<3),0);
+	for (int i=0; i<8 ; i++){
+		LCD_writeByte(symbol[i],1);
+	}
+}
+
+void LCD_defineSymbolp(uint8_t location,const uint8_t * symbol)
+{
+	location &= 0x7;
+	LCD_writeByte(0x40 | (location<<3),0);
+	for (int i=0; i<8 ; i++){
+		LCD_writeByte(pgm_read_byte(symbol+i),1);
+	}
 }

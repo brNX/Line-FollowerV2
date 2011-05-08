@@ -24,8 +24,10 @@ void LCD_init();
 void LCD_writeByte(uint8_t byte,uint8_t is_Data);
 void LCD_writeNibble(uint8_t nibble,uint8_t RS);
 void LCD_writeText(char * text);
+void LCD_writeTextp(char * text);
 void LCD_moveCursor(uint8_t x, uint8_t y);
-
+void LCD_defineSymbol(uint8_t location,const uint8_t * symbol);
+void LCD_defineSymbolp(uint8_t location,const uint8_t * symbol);
 
 
 

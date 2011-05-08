@@ -33,6 +33,7 @@
 #include <util/delay.h>
 #include <avr/eeprom.h>
 #include <avr/sleep.h>
+#include <avr/pgmspace.h>
 #include <stdlib.h>
 #include "USARTatmega328.h"
 #include "lcd-74hc595.h"
@@ -81,6 +82,27 @@ uint8_t sensorValuesMax[5]={0,0,0,0,0};
 #define LCDDATA 4
 #define LCDCLOCK 5
 
+const uint8_t symbols[] PROGMEM ={
+	0b00000,
+	0b00000,
+	0b00000,
+	0b00000,
+	0b00000,
+	0b00000,
+	0b00000,
+	0b00000,
+	0b11111,
+	0b11111,
+	0b11111,
+	0b11111,
+	0b11111,
+	0b11111,
+	0b11111,
+	0b11111
+};
+
+const char Message1[] PROGMEM = "3-Wire LCD";
+const char Message2[] PROGMEM = "using 74HC595";
 
 
 void IO_init(){
@@ -91,8 +113,8 @@ void IO_init(){
 	LEDREGISTER |= (1<<LEDPIN);
 
 	//set button pins to input
-	BUTTONREGISTER &= ~(1<<BUTTON1);
-	BUTTONPORT |= (1<<BUTTON1); //pullup
+	BUTTONREGISTER &= ~((1<<BUTTON1) | (1<< BUTTON2));
+	BUTTONPORT |= (1<<BUTTON1) | (1<<BUTTON2); //pullup
 
 }
 
@@ -312,12 +334,19 @@ void initalCalibration(){
 	Motors_set(0,0);
 }
 
+void loadLCDSymbols(){
+	for (int i=0;i<8;i++){
+		LCD_defineSymbolp(i,symbols+i);
+	}
+}
+
 
 int main (){
 
 	IO_init();
 	PWM_init();
 	LCD_init();
+	loadLCDSymbols();
 
 #ifdef DEBUG
 	USART_Init(25);
@@ -325,11 +354,10 @@ int main (){
 
 	Sensors_reset();
 
-	while(BUTTONSTATE & (1<<BUTTON1));
+	/*while(BUTTONSTATE & (1<<BUTTON1));
 	_delay_ms(500);
 
-	initalCalibration();
-
+	initalCalibration();*/
 
 	/*print_string("calibration:\n");
 	print_string("max:");
@@ -354,12 +382,9 @@ int main (){
 	while(BUTTONSTATE & (1<<BUTTON1));
 	_delay_ms(500);
 
-	/*char Message1[] = "3-Wire LCD";
-	char Message2[] = "using 74HC595";*/
-
 	for (;;){
 
-		unsigned int position = Sensors_readLine(0);
+		/*unsigned int position = Sensors_readLine(0);
 
 		if(position < 1000)
 		{
@@ -372,7 +397,7 @@ int main (){
 		else
 		{
 			Motors_set(100,0);
-		}
+		}*/
 
 
 		/*readSensors();
@@ -394,13 +419,17 @@ int main (){
 		print_string("\n");
 
 		_delay_ms(50);*/
-		/*LCD_moveCursor(1,4);
-		LCD_writeText(Message1);
+		for (int i=0;i<8;i++){
+			LCD_moveCursor(1,4);
+			LCD_writeByte(i,1);
+			_delay_ms(100);
+		}
+		_delay_ms(1500);
 		LCD_moveCursor(2,2);
-		LCD_writeText(Message2);
+		LCD_writeTextp(Message2);
 		_delay_ms(1500);
 		LCD_writeByte(0x01,0);  // Clear LCD
-		_delay_ms(1000);*/
+		_delay_ms(1000);
 
 
 
