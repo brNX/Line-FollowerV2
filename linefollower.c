@@ -1,3 +1,32 @@
+/*
+ * linefollower.c
+ *
+ *  Created on: May 7, 2011
+ *      Author: bgouveia
+ */
+
+
+//Pololu sensors code
+/*
+ * Written by Ben Schmidel et al., May 28, 2008.
+ * Copyright (c) 2008 Pololu Corporation. For more information, see
+ *
+ *   http://www.pololu.com
+ *   http://forum.pololu.com
+ *   http://www.pololu.com/docs/0J18
+ *
+ * You may freely modify and share this code, as long as you keep this
+ * notice intact (including the two links above).  Licensed under the
+ * Creative Commons BY-SA 3.0 license:
+ *
+ *   http://creativecommons.org/licenses/by-sa/3.0/
+ *
+ * Disclaimer: To the extent permitted by law, Pololu provides this work
+ * without any warranty.  It might be defective, in which case you agree
+ * to be responsible for all resulting costs and damages.
+ */
+
+
 #include <avr/io.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
@@ -236,16 +265,7 @@ int Sensors_readLine(char white_line)
 	}
 
 	if(!on_line)
-	{
-		// If it last read to the left of center, return 0.
-		if(last_value < (4)*1000/2)
-			return 0;
-
-		// If it last read to the right of center, return the max.
-		else
-			return (4)*1000;
-
-	}
+		return (last_value < (4)*1000/2)?0:4000;
 
 	last_value = avg/sum;
 
@@ -278,8 +298,6 @@ void Motors_set(int left,int right){
 }
 
 void initalCalibration(){
-	// Auto-calibration: turn right and left while calibrating the
-	// sensors.
 	for(int counter=0;counter<80;counter++)
 	{
 		if(counter < 20 || counter >= 50)
@@ -341,9 +359,6 @@ int main (){
 
 	for (;;){
 
-		// Get the position of the line.  Note that we *must* provide
-		// the "sensors" argument to read_line() here, even though we
-		// are not interested in the individual sensor readings.
 		unsigned int position = Sensors_readLine(0);
 
 		if(position < 1000)
