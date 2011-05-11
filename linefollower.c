@@ -160,7 +160,7 @@ void Sensors_read(){
 
 	SENSORSPORT |= ALLSENSORS;
 	SENSORSREGISTER |= ALLSENSORS;
-	_delay_us(15);
+	_delay_us(30);
 
 	SENSORSREGISTER &= ~ALLSENSORS;
 	SENSORSPORT &= ~ALLSENSORS;
@@ -331,7 +331,7 @@ void Motors_set(int left,int right){
 void initalCalibration(){
 	for(int counter=0;counter<80;counter++)
 	{
-		if(counter < 20 || counter >= 50)
+		if(counter < 20 || counter >= 60)
 			Motors_set(60,-60);
 		else
 			Motors_set(-60,60);
@@ -417,6 +417,18 @@ void displayLCDcurrentValues(int pos){
 
 }
 
+inline void simpleFollow(unsigned int pos){
+	if(pos < 2000){
+			uint32_t value =((2000-pos)*10) / 166;
+			value = 120 - value;
+			Motors_set(value,120);
+	}else{
+			uint32_t value =((pos-2000)*10)  / 166;
+			value = 120 - value;
+			Motors_set(120,value);
+	}
+}
+
 
 int main (){
 
@@ -479,29 +491,7 @@ int main (){
 
 		unsigned int position = Sensors_readLine(0);
 
-		if(position < 1000)
-		{
-			Motors_set(0,100);
-		}
-		else if(position < 3000)
-		{
-			Motors_set(100,100);
-		}
-		else
-		{
-			Motors_set(100,0);
-		}
-
-		/*for (int i=0;i<8;i++){
-			LCD_moveCursor(1,4);
-			LCD_writeByte(i,1);
-			_delay_ms(100);
-		}
-		_delay_ms(1500);
-		LCD_moveCursor(2,2);
-		LCD_writeTextp(Message2);
-		_delay_ms(1500);
-		LCD_clear();*/
+		simpleFollow(position);
 
 	}
 
