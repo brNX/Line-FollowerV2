@@ -148,7 +148,7 @@ void PWM_init(){
 
 }
 
-void Sensors_read(){
+static inline void Sensors_read(){
 	sensorValues[0]=0;
 	sensorValues[1]=0;
 	sensorValues[2]=0;
@@ -160,7 +160,7 @@ void Sensors_read(){
 
 	SENSORSPORT |= ALLSENSORS;
 	SENSORSREGISTER |= ALLSENSORS;
-	_delay_us(30);
+	_delay_us(40);
 
 	SENSORSREGISTER &= ~ALLSENSORS;
 	SENSORSPORT &= ~ALLSENSORS;
@@ -215,7 +215,7 @@ void Sensors_calibrate(){
 // corresponds to the maximum value.  Calibration values are
 // stored separately for each sensor, so that differences in the
 // sensors are accounted for automatically.
-void Sensors_readCalibrated()
+static inline void Sensors_readCalibrated()
 {
 	int i;
 
@@ -265,7 +265,7 @@ void Sensors_readCalibrated()
 // black, set the optional second argument white_line to true.  In
 // this case, each sensor value will be replaced by (1000-value)
 // before the averaging.
-int Sensors_readLine(char white_line)
+static inline int Sensors_readLine(char white_line)
 {
 	unsigned char i, on_line = 0;
 	unsigned long avg; // this is for the weighted total, which is long
@@ -304,7 +304,7 @@ int Sensors_readLine(char white_line)
 }
 
 
-void Motors_set(int left,int right){
+static inline void Motors_set(int left,int right){
 	if (left>=0){
 		MOTORPORT |= (1<<LEFTA);
 		MOTORPORT &= ~(1<<LEFTB);
@@ -417,7 +417,7 @@ void displayLCDcurrentValues(int pos){
 
 }
 
-inline void simpleFollow(unsigned int pos){
+static inline void simpleFollow(unsigned int pos){
 	if(pos < 2000){
 			uint32_t value =((2000-pos)*10) / 166;
 			value = 120 - value;
@@ -429,6 +429,94 @@ inline void simpleFollow(unsigned int pos){
 	}
 }
 
+#define KP 0.9
+#define KI 10500.0
+#define KD 19
+
+unsigned int last_proportional=0;
+long integral=0;
+
+unsigned long ki = 1000;
+double kp = 1;
+double kd = 1;
+
+static inline void pidFollow(unsigned int pos){
+
+	int proportional = ((int)pos) - 2000;
+
+	int derivative = proportional - last_proportional;
+	integral += proportional;
+
+	last_proportional = proportional;
+
+	double power_difference = proportional*KP + integral*(1/KI) + derivative*KD;
+
+	// Compute the actual motor settings.  We never set either motor
+	// to a negative value.
+	const int max = 210;
+	if(power_difference > max)
+		power_difference = max;
+	if(power_difference < -max)
+		power_difference = -max;
+
+	if(power_difference < 0)
+		Motors_set(max+power_difference, max);
+	else
+		Motors_set(max, max-power_difference);
+}
+
+void printFloat(double number, uint8_t digits)
+{
+  // Handle negative numbers
+  if (number < 0.0)
+  {
+     LCD_writeByte('-',1);
+     number = -number;
+  }
+
+  // Round correctly so that print(1.999, 2) prints as "2.00"
+  double rounding = 0.5;
+  for (uint8_t i=0; i<digits; ++i)
+    rounding /= 10.0;
+
+  number += rounding;
+
+  // Extract the integer part of the number and print it
+  unsigned long int_part = (unsigned long)number;
+  double remainder = number - (double)int_part;
+  char temp [10];
+  itoa(int_part,temp,10);
+  LCD_writeText(temp);
+
+  // Print the decimal point, but only if there are digits beyond
+  if (digits > 0)
+   LCD_writeByte('.',1);
+
+  // Extract digits from the remainder one at a time
+  while (digits-- > 0)
+  {
+    remainder *= 10.0;
+    int toPrint = remainder;
+    char temp [10];
+    itoa(toPrint,temp,10);
+    LCD_writeText(temp);
+    remainder -= toPrint;
+  }
+}
+
+volatile unsigned long tick = 0;
+
+void inittimer2(){
+//enable interrupt TimerCounter2 compare match A
+TIMSK2 = _BV(OCF2A);
+//setting CTC
+TCCR2A = _BV(WGM21);
+//Timer2 Settings: Timer Prescaler /64,
+TCCR2B = _BV(CS22);
+
+//top of the counter
+OCR2A=0x7C;
+}
 
 int main (){
 
@@ -436,6 +524,9 @@ int main (){
 	PWM_init();
 	LCD_init();
 	loadLCDSymbols();
+	//inittimer2();
+
+	unsigned long counter =0;
 
 #ifdef DEBUG
 	USART_Init(25);
@@ -444,7 +535,7 @@ int main (){
 	Sensors_reset();
 
 
-	startLCD();
+	//startLCD();
 	while(BUTTONSTATE & (1<<BUTTON1));
 	_delay_ms(500);
 
@@ -461,6 +552,27 @@ int main (){
 	_delay_ms(500);
 
 	LCD_clear();
+
+
+
+	/*while(BUTTONSTATE & (1<<BUTTON1)){
+
+		if (!(BUTTONSTATE & (1<<BUTTON2))){
+			ki+=500;
+			_delay_ms(25);
+		}
+
+		LCD_moveCursor(1,1);
+		//printFloat(kd,2);
+		char temp[20];
+		ltoa(ki,temp,10);
+		LCD_writeText(temp);
+		_delay_ms(100);
+	}
+	_delay_ms(500);
+
+
+	LCD_clear();*/
 
 	while(BUTTONSTATE & (1<<BUTTON1)){
 		int pos= Sensors_readLine(0);
@@ -486,14 +598,19 @@ int main (){
 	LCD_moveCursor(1,2);
 	LCD_writeTextp(gogo);
 
-
 	for (;;){
 
-		unsigned int position = Sensors_readLine(0);
+			unsigned int position = Sensors_readLine(0);
 
-		simpleFollow(position);
+			//simpleFollow(position);
+			pidFollow(position);
 
 	}
 
 	return 0;
 }
+
+/*ISR(TIMER2_COMPA_vect)
+{
+	tick++;
+}*/
