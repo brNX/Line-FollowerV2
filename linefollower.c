@@ -106,7 +106,7 @@ const char ready[] PROGMEM = "Ready...";
 const char push[] PROGMEM = "Push B1";
 const char start[] PROGMEM = "Start in";
 const char gogo[] PROGMEM = "Go Go Go !!!";
-const char sensorsgraph[] PROGMEM ="1 2 3 4 5  Pos";
+const char sensorsgraph[] PROGMEM ="12345 Pos";
 const char mintext[] PROGMEM ="MIN";
 const char maxtext[] PROGMEM ="MAX";
 
@@ -139,8 +139,8 @@ void PWM_init(){
 	//mode 1 (pwm phase correct)
 	TCCR0A |= (1<<WGM00);
 
-	//prescaler to 64 
-	TCCR0B |=  (1<<CS01) | (1<<CS00);
+	//prescaler to 1 // pwm frequency of +/- 15,6khz
+	TCCR0B |=  (1<<CS00);
 
 
 	OCR0A = 0; // set pwm duty
@@ -332,13 +332,13 @@ void initalCalibration(){
 	for(int counter=0;counter<80;counter++)
 	{
 		if(counter < 20 || counter >= 60)
-			Motors_set(60,-60);
+			Motors_set(130,-130);
 		else
-			Motors_set(-60,60);
+			Motors_set(-130,130);
 
 		Sensors_calibrate();
 
-		_delay_ms(20);
+		_delay_ms(5);
 	}
 	Motors_set(0,0);
 }
@@ -392,7 +392,7 @@ void displayLCDcurrentValues(int pos){
 	LCD_moveCursor(1,1);
 	LCD_writeTextp(sensorsgraph);
 	for (int i = 0; i < 5 ; i++){
-		LCD_moveCursor(2,1+i*2);
+		LCD_moveCursor(2,1+i);
 		if(sensorValues[i] < 143)
 			LCD_writeByte(1,1);
 		else if (sensorValues[i] < 285)
@@ -409,7 +409,7 @@ void displayLCDcurrentValues(int pos){
 			LCD_writeByte(7,1);
 	}
 
-	LCD_moveCursor(2,12);
+	LCD_moveCursor(2,7);
 	char temp[5];
 	//TODO: replace sprintf
 	sprintf(temp,"%04d",pos);
@@ -429,7 +429,7 @@ static inline void simpleFollow(unsigned int pos){
 	}
 }
 
-#define KP 0.9
+#define KP 1.5
 #define KI 10500.0
 #define KD 19
 
@@ -437,7 +437,7 @@ unsigned int last_proportional=0;
 long integral=0;
 
 unsigned long ki = 1000;
-double kp = 1;
+double kp = 0.1;
 double kd = 1;
 
 static inline void pidFollow(unsigned int pos){
@@ -453,7 +453,7 @@ static inline void pidFollow(unsigned int pos){
 
 	// Compute the actual motor settings.  We never set either motor
 	// to a negative value.
-	const int max = 210;
+	const int max = 180;
 	if(power_difference > max)
 		power_difference = max;
 	if(power_difference < -max)
@@ -534,6 +534,10 @@ int main (){
 
 	Sensors_reset();
 
+	LCD_moveCursor(1,1);
+	LCD_writeTextp(ready);
+	LCD_moveCursor(2,1);
+	LCD_writeTextp(push);
 
 	//startLCD();
 	while(BUTTONSTATE & (1<<BUTTON1));
@@ -555,24 +559,24 @@ int main (){
 
 
 
-	/*while(BUTTONSTATE & (1<<BUTTON1)){
-
-		if (!(BUTTONSTATE & (1<<BUTTON2))){
-			ki+=500;
-			_delay_ms(25);
-		}
-
-		LCD_moveCursor(1,1);
-		//printFloat(kd,2);
-		char temp[20];
-		ltoa(ki,temp,10);
-		LCD_writeText(temp);
-		_delay_ms(100);
-	}
-	_delay_ms(500);
-
-
-	LCD_clear();*/
+//	while(BUTTONSTATE & (1<<BUTTON1)){
+//
+//		if (!(BUTTONSTATE & (1<<BUTTON2))){
+//			kd+=0.5;
+//			_delay_ms(25);
+//		}
+//
+//		LCD_moveCursor(1,1);
+//		printFloat(kd,2);
+//		/*char temp[20];
+//		ltoa(ki,temp,10);
+//		LCD_writeText(temp);*/
+//		_delay_ms(100);
+//	}
+//	_delay_ms(500);
+//
+//
+//	LCD_clear();
 
 	while(BUTTONSTATE & (1<<BUTTON1)){
 		int pos= Sensors_readLine(0);
