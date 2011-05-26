@@ -139,8 +139,8 @@ void PWM_init(){
 	//mode 1 (pwm phase correct)
 	TCCR0A |= (1<<WGM00);
 
-	//prescaler to 1 // pwm frequency of +/- 15,6khz
-	TCCR0B |=  (1<<CS00);
+	//prescaler to 256 // pwm frequency of +/- 60 hz
+	TCCR0B |=  (1<<CS02)/*|(1<<CS01)*/;
 
 
 	OCR0A = 0; // set pwm duty
@@ -449,7 +449,7 @@ static inline void pidFollow(unsigned int pos){
 
 	last_proportional = proportional;
 
-	double power_difference = proportional*KP + integral*(1/KI) + derivative*KD;
+	double power_difference = proportional*kp /*+ integral*(1/KI) + derivative*kd*/;
 
 	// Compute the actual motor settings.  We never set either motor
 	// to a negative value.
@@ -559,24 +559,24 @@ int main (){
 
 
 
-//	while(BUTTONSTATE & (1<<BUTTON1)){
-//
-//		if (!(BUTTONSTATE & (1<<BUTTON2))){
-//			kd+=0.5;
-//			_delay_ms(25);
-//		}
-//
-//		LCD_moveCursor(1,1);
-//		printFloat(kd,2);
-//		/*char temp[20];
-//		ltoa(ki,temp,10);
-//		LCD_writeText(temp);*/
-//		_delay_ms(100);
-//	}
-//	_delay_ms(500);
-//
-//
-//	LCD_clear();
+	while(BUTTONSTATE & (1<<BUTTON1)){
+
+		if (!(BUTTONSTATE & (1<<BUTTON2))){
+			kp+=0.1;
+			_delay_ms(25);
+		}
+
+		LCD_moveCursor(1,1);
+		printFloat(kp,2);
+		/*char temp[20];
+		ltoa(ki,temp,10);
+		LCD_writeText(temp);*/
+		_delay_ms(100);
+	}
+	_delay_ms(500);
+
+
+	LCD_clear();
 
 	while(BUTTONSTATE & (1<<BUTTON1)){
 		int pos= Sensors_readLine(0);
